@@ -6,7 +6,7 @@ using Random
 using LinearAlgebra
 using MLDataUtils, StatsBase
 using ub_func
-
+using Distributions
 export read_data, datapreprocess, cluster_eval, plotResult, nestedEval, sig_gen
 
 

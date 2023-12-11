@@ -26,7 +26,7 @@ function label_bin(y, k, alg = "dim")
         Y = zeros(k,n)
     end
     for i in 1:n
-        Y[y[i],i] = 1
+        Y[Int64(y[i]),i] = 1
     end
     return Y
 end

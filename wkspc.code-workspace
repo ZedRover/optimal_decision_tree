@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../fast-odt"
+		},
+		{
+			"path": "../Quant-BnB"
+		}
+	],
+	"settings": {
+	}
+}
