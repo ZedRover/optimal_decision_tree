@@ -438,7 +438,7 @@ function one_pass_search_mr(X, y, idx, feature, type)
 
 end
 function get_ig(X, Y, idx, feature)
-	loss_best, threshold_best, mean_left_best, mean_right_best = one_pass_search_mr(X, Y, idx, feature, "G")
+	loss_best, threshold_best, mean_left_best, mean_right_best = one_pass_search_mr(X, Y, idx, feature, "C")
 	return loss_best, threshold_best, mean_left_best, mean_right_best
 end
 
@@ -468,22 +468,6 @@ function test_cart(X, Y, tree, leaf_idx, K, D)
 
 	return tree
 end
-function find_leaf(tree, sample, D)
-	node_idx = 1
-	for d in 1:D-1
-		feature_idx = findfirst(x -> x == 1, tree.a[:, node_idx])
-		if isempty(feature_idx) || tree.d[node_idx] == 0
-			break
-		end
-		if sample[feature_idx] < tree.b[node_idx]
-			node_idx = 2 * node_idx
-		else
-			node_idx = 2 * node_idx + 1
-		end
-	end
-	return node_idx
-end
-
 
 function lb_calc(X_proc, Y_proc, K, D, lower, upper, dtm_idx, costs, group_trees, groups, UB, tree, eps, LB_gp, lrg_gap, alpha_s, L_hat, mingap, LB_mtd, iter, updateUB = false, LB_small_test = true)
 	fathom = false
@@ -497,16 +481,15 @@ function lb_calc(X_proc, Y_proc, K, D, lower, upper, dtm_idx, costs, group_trees
 			@debug "test cart on leaf $leaf_idx"
 			# 确定到达该叶子节点的样本
 			sample_indices = findall(x -> x == 1, tree.z[:, leaf_idx])
-
-			# 如果有样本到达该叶子节点
 			if !isempty(sample_indices)
-				# 使用 test_cart 更新树结构
 				tree = test_cart(X_proc[:, sample_indices], Y_proc[:, sample_indices], tree, leaf_idx, K, D)
-				# 更新 lower 和 upper 的参数
+
 				lower.a[:, leaf_idx], upper.a[:, leaf_idx] = tree.a[:, leaf_idx], tree.a[:, leaf_idx]
 				lower.b[leaf_idx], upper.b[leaf_idx] = tree.b[leaf_idx], tree.b[leaf_idx]
 			end
 		end
+        # costs = -ones(size(X_proc, 2))
+        
 		fathom = true
 		parallel.barrier()
 		LB = parallel.bcast(UB)

@@ -133,8 +133,8 @@ else
 end
 
 if parallel.is_root()
-	Trees.printTree(tree_w)
-	Trees.printTree(tree_)
+	# Trees.printTree(tree_w)
+	# Trees.printTree(tree_)
 	if gap_ === nothing
 		gap_ = round(calc[end][end], digits = 4)
 	end
