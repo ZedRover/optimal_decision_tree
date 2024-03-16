@@ -69,6 +69,7 @@ function branch_bound(X, Y, K, D, warm_start, UB_init, alpha, L_hat, method = "C
 	calcInfo = [] # initial space to save calcuation information
 
 	while nodeList != []
+		println("nodeList: ", length(nodeList))
 		node = nodeList[1] # node = nodeList[nodeid] # sorted node list, the first has the lowest LB
 		@debug "node level: $(node.level)"
 		LB = LB_list[1] # node_LB is current lowerest LB
@@ -78,6 +79,7 @@ function branch_bound(X, Y, K, D, warm_start, UB_init, alpha, L_hat, method = "C
 		if parallel.is_root()
 			@printf "%-6d %-6d %-10d %-10.4f %-10.4f %-10.4f %s \n" iter length(nodeList) node.level LB UB (UB - LB) / min(abs(LB), abs(UB)) * 100 "%"
 		end
+		@info "bb" iter = iter num_node = length(nodeList) + 1 LB = LB UB = UB gap = (UB - LB) / min(abs(LB), abs(UB))
 		# time stamp should be checked after the retrival of the results
 		if (iter >= maxiter) || (time_ns() >= end_time)
 			if parallel.is_root()
@@ -100,8 +102,6 @@ function branch_bound(X, Y, K, D, warm_start, UB_init, alpha, L_hat, method = "C
 		##################### lower and upper(inside lb function) bound update #####################
 		X_rand, Y_rand, X_rproc, Y_rproc, node_rand, ~ = groups.proc_data_preparation(X, Y, p, n_all, K, D, warm_start, method, true, iter)
 		node, UB, tree, fathom = getBound(X_proc, Y_proc, X_rproc, Y_rproc, node, node_rand, K, D, eps, UB, tree, alpha_s, L_hat, mingap, method, iter, false)
-
-		# TODO check 上层的var是否确定，如果确定下层的调用 cart 计算 ，默认当前最优。默认 lb up 一样，直接输出，UB 和 tree ，在 fathom 中去掉，如果接近最优 upper 之后把 value 存下来，存到 Node 里面。把 getBound 换掉使用 cart。check 是否上层确定，然后把 getBound换掉。
 
 		##################### branching #####################
 		if fathom

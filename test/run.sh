@@ -1,4 +1,4 @@
-use_par="serial"
+use_par="par"
 
 while getopts ":p:" opt; do
     case $opt in
@@ -13,8 +13,8 @@ done
 
 if [ "$use_par" == "par" ]; then
     echo "parallel"
-    ~/.julia/bin/mpiexec -n 120 julia test/test.jl 2 CF+MILP+SG 1 par "small_toy"
+    ~/.julia/bin/mpiexecjl -n 120 julia test/test.jl 3 CF+MILP+SG 1 par "data"
 else
     echo "serial"
-    julia test/test.jl 2 CF+MILP+SG 1 sl "small_toy"
+    julia test/test.jl 2 CF+MILP+SG 1 sl "data"
 fi

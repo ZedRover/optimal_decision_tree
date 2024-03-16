@@ -21,7 +21,13 @@ using TimerOutputs: @timeit, get_timer
 
 using Trees, bound, parallel, Nodes
 using opt_func, ub_func, lb_func, bb_func, data_process
+using Logging, Wandb
 
+function create_logger(; project = "odt-tmp", name = nothing)
+	logger = WandbLogger(; project = project, name = name)
+	global_logger(logger)
+	return logger
+end
 
 # arg1=: maximum depth of the tree
 # arg2=: Lower bound method
@@ -61,7 +67,12 @@ parallel.root_println("Start training $dataname with seed $seed.")
 #############################################################
 
 ##################### read and generate data #####################
+LOG = true
 if parallel.is_root()
+	if LOG
+		logger = create_logger(project = "odt-tmp", name = "$dataname-$D")
+		update_config!(logger, Dict("Dataname" => dataname, "D" => D, "LB_method" => LB_method, "seed" => seed, "scheme" => scheme, "scheme" => scheme, "raw" => true))
+	end
 	if dataname == "toy"
 		data, lbl, K = read_data(dataname, clst_n = clst_n, nclst = nclst, d = d)
 	else
@@ -70,7 +81,7 @@ if parallel.is_root()
 	println("Size of (data): $(size(data))")
 
 	Random.seed!(seed)
-	train, valid, test = stratifiedobs((view(data, :, :), lbl), (0.5, 0.25))
+	train, valid, test = stratifiedobs((view(data, :, :), lbl), (0.5, 0.3)) 
 	tr_x, tr_y = train
 	va_x, va_y = valid
 	te_x, te_y = test
@@ -88,11 +99,11 @@ if parallel.is_root()
 	Y_d = opt_func.label_bin(y, K, "dim")
 	p, n = size(X)
 	println("dimension: $p, class: $K")
-    println("Y_d: $(size(Y_d))")
+	println("Y_d: $(size(Y_d))")
 
 	# Heuristic method for comparison and warm_start
 	time_w = @elapsed tree_w, objv_w = CART_base(X, Y_g, K, D, alp, L_hat)
-    display(tree_w)
+	# display(tree_w)
 	println("cart cost: $objv_w")
 
 else
@@ -123,7 +134,7 @@ if parallel.is_root()
 	elseif "base-glb" in LB_method
 		time_ = @elapsed tree_, objv_, gap_, LB_ = global_OPT_DT(X, Y_g, K, D, alp, L_hat; warm_start = tree_w, mute = false, solver = "CPLEX")
 	else # LB_method == "CF+MILP+" or "CF+MILP"
-		time_ = @elapsed tree_, objv_, calc, LB_ = branch_bound(X, Y_g, K, D, tree_w, objv_w, alp, L_hat, LB_method, true, false)
+		time_ = @elapsed tree_, objv_, calc, LB_ = branch_bound(X, Y_g, K, D, tree_w, objv_w, alp, L_hat, LB_method, true, false,0,14400) # 14400 = 4h
 	end
 else
 	if "CF" in LB_method || "MILP" in LB_method || "" in LB_method
@@ -143,14 +154,34 @@ if parallel.is_root()
 	# print result
 	println("Dataname\t time\t objv\t lb\t gap\t train_w\t train_g\t test_w\t test_g")
 	println("$dataname\t $(round(time_, digits=2))\t $objv_\t $(round(LB_, digits=3))\t $gap_\t $accr_trw\t $accr_trg\t $accr_w\t $accr_g")
+	@info "res" dataname = dataname time = time_ objv = objv_ lb = LB_ gap = gap_ train_w = accr_trw train_g = accr_trg test_w = accr_w test_g = accr_g
 
 	##################### Tree structure plot #####################
+	open("$(dataname)-$(D).txt", "w") do file
+		println(file,"-----CART-----")
+		printTreeToFile(tree_w, file)
+		println(file,"-----OPT------")
+		printTreeToFile(tree_, file)
+		println(file,"--------------")
+		println(file,"text/plain","Dataname\t time\t objv\t lb\t gap\t train_w\t train_g\t test_w\t test_g")
+		println(file,"text/plain","$dataname\t $(round(time_, digits=2))\t $objv_\t $(round(LB_, digits=3))\t $gap_\t $accr_trw\t $accr_trg\t $accr_w\t $accr_g")
+	end
+	printTree(tree_w)
+	printTree(tree_)
 	plt = true
 	if plt
+		for col in 1:size(tree_opt.a, 2)
+			max_index = argmax(tree_opt.a[:, col])
+			tree_opt.a[:, col] .= 0
+			tree_opt.a[max_index, col] = 1
+		end
 		tree_plot(tree_w, "CART", dataname)
 		tree_plot(tree_, "lb", dataname)
 		# tree_plot(tree_g, "glb", dataname)
 		# tree_plot(tree_d, "dim", dataname)
+	end
+	if LOG
+		close(logger)
 	end
 end
 

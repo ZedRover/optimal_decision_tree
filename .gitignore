@@ -39,3 +39,7 @@ docs/site/
 Manifest.toml
 
 img/
+
+data/
+wandb/
+**/*.txt

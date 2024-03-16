@@ -4,7 +4,7 @@ using Random, SparseArrays
 using Luxor
 using JuMP
 using parallel
-export Tree, Tree_cf, Tree_lmda, Tree_lmda_rnd, tree_plot, leaf_label, printTree
+export Tree, Tree_cf, Tree_lmda, Tree_lmda_rnd, tree_plot, leaf_label, printTree,printTreeToFile
 
 struct Tree
     a::Union{Nothing, Matrix{Float64}}
@@ -184,6 +184,18 @@ function tree_plot(tree, model = "dim", dataname = "iris")
         plotOCT(1, tree, l_idx, tbl, col, 1)
     end 70*2^D+10 50*(D+1)+10 "img/$dataname-$D-$model.png"
 end
+
+function printTreeToFile(tree::Tree, file::IO)
+    show(file, "text/plain", tree.a)
+    println(file)
+    show(file, "text/plain", tree.b)
+    println(file)
+    show(file, "text/plain", tree.c)
+    println(file)
+    show(file, "text/plain", tree.d)
+    println(file)
+end
+
 
 
 end
